@@ -1,3 +1,4 @@
+# Импортирование необходимых модулей
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
@@ -13,6 +14,7 @@ DB_URL = "postgresql://user:password@db:5432/dbname"
 
 Base = declarative_base()
 
+# Определение структуры таблицы ProductInfo в базе данных
 class ProductInfo(Base):
     __tablename__ = 'product_info'
 
@@ -37,6 +39,7 @@ loop = asyncio.get_event_loop()
 
 subscriptions = {}  # Словарь для хранения подписок
 
+# Функция для отправки сообщения с информацией о товаре
 async def send_message(article, chat_id, user_id):
     url = f"https://card.wb.ru/cards/v1/detail?appType=1&curr=rub&dest=-1257786&spp=30&nm={article}"
     response = requests.get(url)
@@ -74,6 +77,7 @@ async def send_message(article, chat_id, user_id):
         print(f"Ошибка при отправке сообщения и сохранении данных в базе😔: {e}")
 
 
+# Обработчик для команды /start
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -82,20 +86,20 @@ async def start(message: types.Message):
     keyboard.add(types.KeyboardButton("Получить информацию из БД"))
     await message.answer("Выберите действие:", reply_markup=keyboard)
 
-
+# Обработчик для получения информации о товаре от пользователя
 @dp.message_handler(lambda message: message.text == "Получить информацию по товару")
 async def get_product_info(message: types.Message):
     await message.answer("Введите артикул товара с Wildberries:")
     dp.register_message_handler(get_product_article, content_types=types.ContentType.TEXT)
 
-
+# Функция для получения артикула товара
 async def get_product_article(message: types.Message):
     article = message.text
     chat_id = message.chat.id
     user_id = message.from_user.id
     await send_message(article, chat_id, user_id)
 
-
+# Обработчик для подписки на уведомления
 @dp.callback_query_handler(lambda callback_query: callback_query.data.startswith('subscribe_'))
 async def subscribe(callback_query: types.CallbackQuery):
     article = callback_query.data.split('_')[1]
@@ -105,13 +109,13 @@ async def subscribe(callback_query: types.CallbackQuery):
     await callback_query.answer("Вы подписались на уведомления. Буду присылать информацию каждые 5 минут.")
     loop.create_task(send_periodic_updates(article, chat_id, user_id))
 
-
+# Функция для отправки периодических обновлений
 async def send_periodic_updates(article, chat_id, user_id):
     while chat_id in subscriptions and subscriptions[chat_id] == article:
         await send_message(article, chat_id, user_id)
         await asyncio.sleep(300)  # 5 minutes
 
-
+# Обработчик для остановки уведомлений
 @dp.message_handler(lambda message: message.text == "Остановить уведомления")
 async def stop_notifications(message: types.Message):
     chat_id = message.chat.id
@@ -121,7 +125,7 @@ async def stop_notifications(message: types.Message):
     else:
         await message.answer("У вас нет активных подписок.")
 
-
+# Обработчик для получения информации из базы данных
 @dp.message_handler(lambda message: message.text == "Получить информацию из БД")
 async def get_info_from_db(message: types.Message):
     session = Session()
