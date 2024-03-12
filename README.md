@@ -29,4 +29,4 @@ docker-compose up
 
 
 ## Демонстрация
-![Chatbot Demo](2024-03-12_13-08-27.png)
+![Chatbot Demo](img/2024-03-12_13-08-27.png)
