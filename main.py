@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 
-API_TOKEN  = '7078892748:AAG-p8EXzipI6CwdojhAZRGk1jR-r_1ezGs'
+API_TOKEN  = 'API_TOKEN'
 DB_URL = "postgresql://user:password@db:5432/dbname"
 
 Base = declarative_base()
