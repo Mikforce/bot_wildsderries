@@ -1,0 +1,25 @@
+version: '3'
+services:
+    db:
+        image: postgres
+        environment:
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: dbname
+        networks:
+            - mynetwork
+        ports:
+            - "5432:5432"
+
+    app:
+        build: .
+        depends_on:
+            - db
+        environment:
+            DATABASE_URL: postgresql://user:password@db:5432/dbname
+        networks:
+            - mynetwork
+
+networks:
+    mynetwork:
+        driver: bridge
