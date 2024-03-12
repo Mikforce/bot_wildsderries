@@ -3,8 +3,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import requests
-from sqlalchemy import create_engine, Column, Integer, String, Float
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
+from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 
@@ -17,6 +17,8 @@ class ProductInfo(Base):
     __tablename__ = 'product_info'
 
     id = Column(Integer, primary_key=True)
+    user_id = Column(String)
+    request_time = Column(DateTime, default=datetime.now)
     title = Column(String)
     article = Column(String)
     price = Column(Float)
@@ -35,18 +37,7 @@ loop = asyncio.get_event_loop()
 
 subscriptions = {}  # Словарь для хранения подписок
 
-
-# async def send_message(article, chat_id):
-#     url = f"https://card.wb.ru/cards/v1/detail?appType=1&curr=rub&dest=-1257786&spp=30&nm={article}"
-#     response = requests.get(url)
-#     data = response.json()
-#     product = data['data']['products'][0]
-#     message = f"{product['name']}\nАртикул: {product['id']}\nЦена: {product['priceU']}\nРейтинг: {product['rating']}\nКоличество на складах: {product['sizes'][0]['stocks'][0]['qty']}"
-#
-#     await bot.send_message(chat_id, message, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-#         [InlineKeyboardButton(text="Подписаться", callback_data=f"subscribe_{article}")]
-#     ]))
-async def send_message(article, chat_id):
+async def send_message(article, chat_id, user_id):
     url = f"https://card.wb.ru/cards/v1/detail?appType=1&curr=rub&dest=-1257786&spp=30&nm={article}"
     response = requests.get(url)
     data = response.json()
@@ -64,7 +55,7 @@ async def send_message(article, chat_id):
     if sizes and sizes[0]['stocks']:
         qty = sizes[0]['stocks'][0].get('qty', 'Нет информации')
 
-    message = f"{name}\nАртикул: {product_id}\nЦена: {price}\nРейтинг: {rating}\nКоличество на складах: {qty}"
+    message = f"🛍️ {name}\n\n🔖 Артикул: {product_id}\n\n💸 Цена: {price}\n\n⭐ Рейтинг: {rating}\n\n📦 Количество на складе: {qty}\n\nСпасибо за ваш запрос! 🙌"
 
     try:
         await bot.send_message(chat_id, message, reply_markup=InlineKeyboardMarkup(inline_keyboard=[
@@ -73,14 +64,14 @@ async def send_message(article, chat_id):
 
         # Сохранение информации о товаре в базе данных
         session = Session()
-        new_product = ProductInfo(title=name, article=product_id, price=price, rating=rating, quantity=qty)
+        new_product = ProductInfo(user_id=user_id, request_time=datetime.now(), title=name, article=product_id, price=price, rating=rating, quantity=qty)
         session.add(new_product)
         session.commit()
         session.close()
 
     except Exception as e:
         # Обработка ошибок при отправке сообщения или записи в базу данных
-        print(f"Ошибка при отправке сообщения и сохранении данных в базе: {e}")
+        print(f"Ошибка при отправке сообщения и сохранении данных в базе😔: {e}")
 
 
 @dp.message_handler(commands=['start'])
@@ -101,21 +92,23 @@ async def get_product_info(message: types.Message):
 async def get_product_article(message: types.Message):
     article = message.text
     chat_id = message.chat.id
-    await send_message(article, chat_id)
+    user_id = message.from_user.id
+    await send_message(article, chat_id, user_id)
 
 
 @dp.callback_query_handler(lambda callback_query: callback_query.data.startswith('subscribe_'))
 async def subscribe(callback_query: types.CallbackQuery):
     article = callback_query.data.split('_')[1]
     chat_id = callback_query.message.chat.id
+    user_id = callback_query.message.from_user.id
     subscriptions[chat_id] = article
     await callback_query.answer("Вы подписались на уведомления. Буду присылать информацию каждые 5 минут.")
-    loop.create_task(send_periodic_updates(article, chat_id))
+    loop.create_task(send_periodic_updates(article, chat_id, user_id))
 
 
-async def send_periodic_updates(article, chat_id):
+async def send_periodic_updates(article, chat_id, user_id):
     while chat_id in subscriptions and subscriptions[chat_id] == article:
-        await send_message(article, chat_id)
+        await send_message(article, chat_id, user_id)
         await asyncio.sleep(300)  # 5 minutes
 
 
