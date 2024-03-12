@@ -25,6 +25,8 @@
 ![Chatbot Demo](img/1.png)
 
 ## Запуск проекта
+Замените API_TOKEN на оригинальный
+
 ```bash
 docker-compose build
 docker-compose up
