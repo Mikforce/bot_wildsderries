@@ -21,12 +21,10 @@
 - PostgreSQL
 - Docker
 
+## Демонстрация
+![Chatbot Demo](img/1.png)
 
 ## Запуск проекта
 ```bash
 docker-compose build
 docker-compose up
-
-
-## Демонстрация
-![Chatbot Demo](img/1.png)
