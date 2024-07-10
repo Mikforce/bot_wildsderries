@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Mini App</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #e9f7ef;
+        }
+        .form-label {
+            color: #28a745;
+        }
+        .btn-custom {
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Order Details</h1>
+        <form id="orderForm">
+            <div class="form-group">
+                <label for="number" class="form-label">Order Number:</label>
+                <input type="text" class="form-control" id="number" name="number" required>
+            </div>
+            <div class="form-group">
+                <label for="tariff_code" class="form-label">Tariff Code:</label>
+                <input type="number" class="form-control" id="tariff_code" name="tariff_code" required>
+            </div>
+            <div class="form-group">
+                <label for="comment" class="form-label">Comment:</label>
+                <input type="text" class="form-control" id="comment" name="comment">
+            </div>
+            <div class="form-group">
+                <label for="shipment_point1" class="form-label">Shipment Point:</label>
+                <input type="text" class="form-control" id="shipment_point1" name="shipment_point1" required>
+            </div>
+            <div class="form-group">
+                <label for="delivery_point1" class="form-label">Delivery Point:</label>
+                <input type="text" class="form-control" id="delivery_point1" name="delivery_point1" required>
+            </div>
+            <div class="form-group">
+                <label for="services" class="form-label">Services:</label>
+                <input type="text" class="form-control" id="services" name="services" required>
+            </div>
+            <div class="form-group">
+                <label for="package_number" class="form-label">Package Number:</label>
+                <input type="text" class="form-control" id="package_number" name="package_number" required>
+            </div>
+            <div class="form-group">
+                <label for="weight" class="form-label">Weight (g):</label>
+                <input type="number" class="form-control" id="weight" name="weight" required>
+            </div>
+            <div class="form-group">
+                <label for="dimensions" class="form-label">Dimensions (L x W x H cm):</label>
+                <input type="text" class="form-control" id="dimensions" name="dimensions" required>
+            </div>
+            <div class="form-group">
+                <label for="package_comment" class="form-label">Package Comment:</label>
+                <input type="text" class="form-control" id="package_comment" name="package_comment">
+            </div>
+            <h2 class="text-center">Items</h2>
+            <div id="items">
+                <div class="item form-group">
+                    <label for="item_name" class="form-label">Item Name:</label>
+                    <input type="text" class="form-control" id="item_name" name="item_name[]" required>
+                    <label for="ware_key" class="form-label">Ware Key:</label>
+                    <input type="text" class="form-control" id="ware_key" name="ware_key[]" required>
+                    <label for="payment_value" class="form-label">Payment Value:</label>
+                    <input type="number" class="form-control" id="payment_value" name="payment_value[]" required>
+                    <label for="vat_sum" class="form-label">VAT Sum:</label>
+                    <input type="number" class="form-control" id="vat_sum" name="vat_sum[]" required>
+                    <label for="vat_rate" class="form-label">VAT Rate:</label>
+                    <input type="number" class="form-control" id="vat_rate" name="vat_rate[]" required>
+                    <label for="cost" class="form-label">Cost:</label>
+                    <input type="number" class="form-control" id="cost" name="cost[]" required>
+                    <label for="item_weight" class="form-label">Weight:</label>
+                    <input type="number" class="form-control" id="item_weight" name="item_weight[]" required>
+                    <label for="amount" class="form-label">Amount:</label>
+                    <input type="number" class="form-control" id="amount" name="amount[]" required>
+                </div>
+            </div>
+            <button type="button" class="btn btn-custom" id="addItem">Add Another Item</button><br><br>
+            <button type="submit" class="btn btn-custom">Submit Order</button>
+        </form>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        Telegram.WebApp.ready();
+
+        document.getElementById('orderForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const formObject = Object.fromEntries(formData.entries());
+
+            // Collect multiple items fields
+            const items = [];
+            document.querySelectorAll('#items .item').forEach(item => {
+                const itemData = {
+                    item_name: item.querySelector('[name="item_name[]"]').value,
+                    ware_key: item.querySelector('[name="ware_key[]"]').value,
+                    payment_value: item.querySelector('[name="payment_value[]"]').value,
+                    vat_sum: item.querySelector('[name="vat_sum[]"]').value,
+                    vat_rate: item.querySelector('[name="vat_rate[]"]').value,
+                    cost: item.querySelector('[name="cost[]"]').value,
+                    item_weight: item.querySelector('[name="item_weight[]"]').value,
+                    amount: item.querySelector('[name="amount[]"]').value
+                };
+                items.push(itemData);
+            });
+
+            formObject.items = items;
+
+            Telegram.WebApp.sendData(JSON.stringify(formObject));
+        });
+
+        document.getElementById('addItem').addEventListener('click', function() {
+            const newItem = document.querySelector('#items .item').cloneNode(true);
+            newItem.querySelectorAll('input').forEach(input => input.value = '');
+            document.getElementById('items').appendChild(newItem);
+        });
+    </script>
+</body>
+</html>
